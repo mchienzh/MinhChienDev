@@ -1,15 +1,14 @@
 -- =============== COMPATIBILITY LAYER ===============
--- Fix: getgenv() is nil on some executors (incl. certain Delta versions).
--- Without this, the script crashes with "attempt to call a nil value" on Line 1.
-if typeof(getgenv) ~= "function" then
-    local _genv_table = shared or {}
-    getgenv = function() return _genv_table end
-end
--- Fix: newcclosure fallback for executors that don't support it
+-- Fix: replace all executor-specific _GENV calls with a plain local table.
+-- This makes the script run on any executor (Delta, Fluxus, Arceus X, etc.)
+local _GENV = {
+    _G = {},
+    SelectedFriend = ""
+}
+-- Fallbacks for other executor-specific functions
 if typeof(newcclosure) ~= "function" then
     newcclosure = function(f) return f end
 end
--- Fix: checkcaller fallback
 if typeof(checkcaller) ~= "function" then
     checkcaller = function() return false end
 end
@@ -24,16 +23,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 -- Khai báo cấu hình toàn cục
-if not getgenv()._G then getgenv()._G = {} end
-getgenv()._G.AutoDooHee = false
-getgenv()._G.TweenMGear = false
-getgenv()._G.KillAura = false          -- Bật/tắt Kill Aura (cả quái và người)
-getgenv()._G.AutoKillV4 = false
-getgenv()._G.AutoQuestRace = false
-getgenv()._G.AutoHopFullMoon = false
-getgenv()._G.SelectWeapon = nil
-getgenv()._G.FriendsList = {}          -- Danh sách bạn bè để ngoại trừ (Whitelist)
-getgenv().SelectedFriend = ""
+_GENV._G.AutoDooHee = false
+_GENV._G.TweenMGear = false
+_GENV._G.KillAura = false          -- Bật/tắt Kill Aura (cả quái và người)
+_GENV._G.AutoKillV4 = false
+_GENV._G.AutoQuestRace = false
+_GENV._G.AutoHopFullMoon = false
+_GENV._G.SelectWeapon = nil
+_GENV._G.FriendsList = {}          -- Danh sách bạn bè để ngoại trừ (Whitelist)
+_GENV.SelectedFriend = ""
 
 local Pos = CFrame.new(0, 40, 0)
 local ATTACK_DELAY = 0.01 -- Tốc độ mô phỏng giữ nút liên tục
@@ -787,18 +785,31 @@ end
 --- KHỞI TẠO UI VÀ ĐĂNG KÝ CÁC PHẦN TỬ CHỨC NĂNG
 --- ========================================================
 
-local vu616 = RedzUiEngine:CreateWindow()
-local TabMain = vu616:CreateTab("Chức Năng Chính")
+-- Thử tạo UI, nếu thất bại thì thử lại sau 2s (tránh crash nếu PlayerGui chưa load)
+local vu616, TabMain
+for attempt = 1, 3 do
+    local ok = pcall(function()
+        vu616 = RedzUiEngine:CreateWindow()
+        TabMain = vu616:CreateTab("Chức Năng Chính")
+    end)
+    if ok and vu616 and TabMain then break end
+    task.wait(2)
+end
+if not TabMain then
+    -- UI không load được - các vòng lặp nền vẫn hoạt động bình thường
+    warn("[MinhChienHub] UI không thể khởi tạo.")
+    TabMain = setmetatable({}, {__index = function() return function() end end})
+end
 
 local friendDropdown = TabMain:CreateDropdown("Chọn Player để Whitelist", getPlayerNames(), function(selected)
-    getgenv().SelectedFriend = selected
+    _GENV.SelectedFriend = selected
 end)
 
 TabMain:CreateButton("Thêm Player đã chọn vào Whitelist", function()
-    if getgenv().SelectedFriend and getgenv().SelectedFriend ~= "" then
-        if not table.find(getgenv()._G.FriendsList, getgenv().SelectedFriend) then
-            table.insert(getgenv()._G.FriendsList, getgenv().SelectedFriend)
-            SendNotification("Whitelist", "Đã chừa ra: " .. getgenv().SelectedFriend, 3)
+    if _GENV.SelectedFriend and _GENV.SelectedFriend ~= "" then
+        if not table.find(_GENV._G.FriendsList, _GENV.SelectedFriend) then
+            table.insert(_GENV._G.FriendsList, _GENV.SelectedFriend)
+            SendNotification("Whitelist", "Đã chừa ra: " .. _GENV.SelectedFriend, 3)
         else
             SendNotification("Thông báo", "Player này đã được thêm từ trước", 2)
         end
@@ -812,8 +823,8 @@ TabMain:CreateButton("Làm mới danh sách Player", function()
     SendNotification("Hệ thống", "Đã cập nhật lại danh sách người chơi mới", 2)
 end)
 
-TabMain:CreateToggle("Auto Hop Full Moon", getgenv()._G.AutoHopFullMoon, function(bool)
-    getgenv()._G.AutoHopFullMoon = bool
+TabMain:CreateToggle("Auto Hop Full Moon", _GENV._G.AutoHopFullMoon, function(bool)
+    _GENV._G.AutoHopFullMoon = bool
 end)
 
 TabMain:CreateButton("Check Full Moon Hiện Tại", function()
@@ -832,24 +843,24 @@ TabMain:CreateButton("Check Full Moon Hiện Tại", function()
     end)
 end)
 
-TabMain:CreateToggle("Look Moon + V3", getgenv()._G.AutoDooHee, function(bool)
-    getgenv()._G.AutoDooHee = bool
+TabMain:CreateToggle("Look Moon + V3", _GENV._G.AutoDooHee, function(bool)
+    _GENV._G.AutoDooHee = bool
 end)
 
-TabMain:CreateToggle("Auto Tween To Gear", getgenv()._G.TweenMGear, function(bool)
-    getgenv()._G.TweenMGear = bool
+TabMain:CreateToggle("Auto Tween To Gear", _GENV._G.TweenMGear, function(bool)
+    _GENV._G.TweenMGear = bool
 end)
 
-TabMain:CreateToggle("Kill Aura", getgenv()._G.KillAura, function(bool)
-    getgenv()._G.KillAura = bool
+TabMain:CreateToggle("Kill Aura (Mobs + Người)", _GENV._G.KillAura, function(bool)
+    _GENV._G.KillAura = bool
 end)
 
-TabMain:CreateToggle("Auto Kill Player Trial", getgenv()._G.AutoKillV4, function(bool)
-    getgenv()._G.AutoKillV4 = bool
+TabMain:CreateToggle("Auto Kill Player Trial", _GENV._G.AutoKillV4, function(bool)
+    _GENV._G.AutoKillV4 = bool
 end)
 
-TabMain:CreateToggle("Auto Trial All Race", getgenv()._G.AutoQuestRace, function(bool)
-    getgenv()._G.AutoQuestRace = bool
+TabMain:CreateToggle("Auto Trial All Race", _GENV._G.AutoQuestRace, function(bool)
+    _GENV._G.AutoQuestRace = bool
 end)
 
 TabMain:CreateButton("Teleport To Top GreatTree", function()
@@ -899,25 +910,26 @@ end)
 
 -- Luồng Auto Hop Full Moon (Chỉ dùng duy nhất API chính)
 task.spawn(function()
-    while true do
+    local shouldStop = false
+    while not shouldStop do
         task.wait(2)
-        if getgenv()._G.AutoHopFullMoon then
+        if _GENV._G.AutoHopFullMoon then
             pcall(function()
                 local sky = game:GetService("Lighting"):FindFirstChildOfClass("Sky")
                 if sky then
                     task.wait(2)
                     local moonId = tostring(sky.MoonTextureId)
                     if string.find(moonId, "9709149431") then
-                        getgenv()._G.AutoHopFullMoon = false
+                        _GENV._G.AutoHopFullMoon = false
                         SendNotification("✅ THÀNH CÔNG", "Server này ĐANG CÓ TRĂNG TRÒN!", 10)
                     else
                         SendNotification("🔍 Tìm kiếm", "Chưa có trăng, gọi API Hop...", 3)
                         local teleported = HopToFullMoonServer()
                         if teleported then
-                            getgenv()._G.AutoHopFullMoon = false  -- Tắt tự động sau khi hop
-                            break  -- Thoát vòng lặp vì đã chuyển server
+                            _GENV._G.AutoHopFullMoon = false
+                            shouldStop = true  -- Thay thế break bất hợp lệ trong pcall
                         else
-                            task.wait(12)  -- Nếu thất bại, đợi rồi thử lại
+                            task.wait(12)
                         end
                     end
                 end
@@ -931,7 +943,7 @@ task.spawn(function()
     while true do
         task.wait(0.5)
         pcall(function()
-            if getgenv()._G.AutoDooHee and LocalPlayer.Character then
+            if _GENV._G.AutoDooHee and LocalPlayer.Character then
                 local moonDir = game.Lighting:GetMoonDirection()
                 local targetPos = game.Workspace.CurrentCamera.CFrame.p + moonDir * 100
                 game.Workspace.CurrentCamera.CFrame = CFrame.lookAt(game.Workspace.CurrentCamera.CFrame.p, targetPos)
@@ -946,7 +958,7 @@ end)
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
-            if getgenv()._G.TweenMGear and game:GetService("Workspace").Map:FindFirstChild("MysticIsland") then
+            if _GENV._G.TweenMGear and game:GetService("Workspace").Map:FindFirstChild("MysticIsland") then
                 for _, object in pairs(game:GetService("Workspace").Map.MysticIsland:GetChildren()) do
                     if object:IsA("MeshPart") and object.Material == Enum.Material.Neon then
                         SafeMove(object.CFrame)
@@ -962,7 +974,7 @@ end)
 task.spawn(function()
     while task.wait(ATTACK_DELAY) do
         pcall(function()
-            if getgenv()._G.KillAura then
+            if _GENV._G.KillAura then
                 local character = LocalPlayer.Character
                 local rootPart = character and character:FindFirstChild("HumanoidRootPart")
                 local tool = character and character:FindFirstChildOfClass("Tool")
@@ -988,7 +1000,7 @@ task.spawn(function()
                     local charactersFolder = game:GetService("Workspace"):FindFirstChild("Characters")
                     if charactersFolder then
                         for _, targetPlayer in pairs(charactersFolder:GetChildren()) do
-                            if targetPlayer.Name ~= LocalPlayer.Name and not table.find(getgenv()._G.FriendsList, targetPlayer.Name) then
+                            if targetPlayer.Name ~= LocalPlayer.Name and not table.find(_GENV._G.FriendsList, targetPlayer.Name) then
                                 local enemyRoot = targetPlayer:FindFirstChild("HumanoidRootPart")
                                 local enemyHuman = targetPlayer:FindFirstChild("Humanoid")
                                 if enemyRoot and enemyHuman and enemyHuman.Health > 0 then
@@ -1014,12 +1026,12 @@ end)
 -- Luồng PvP Auto Kill Player Trial (Có check danh sách whitelist bạn bè)
 task.spawn(function()
     while task.wait(0.2) do
-        if getgenv()._G.AutoKillV4 then
+        if _GENV._G.AutoKillV4 then
             pcall(function()
                 local charsFolder = game.Workspace:FindFirstChild("Characters")
                 if charsFolder then
                     for _, targetPlayer in pairs(charsFolder:GetChildren()) do
-                        if targetPlayer.Name ~= LocalPlayer.Name and not table.find(getgenv()._G.FriendsList, targetPlayer.Name) then
+                        if targetPlayer.Name ~= LocalPlayer.Name and not table.find(_GENV._G.FriendsList, targetPlayer.Name) then
                             local enemyHuman = targetPlayer:FindFirstChild("Humanoid")
                             local enemyRoot = targetPlayer:FindFirstChild("HumanoidRootPart")
                             local enemyHead = targetPlayer:FindFirstChild("Head")
@@ -1030,14 +1042,14 @@ task.spawn(function()
                                     repeat
                                         task.wait(ATTACK_DELAY)
                                         AutoHaki()
-                                        EquipWeapon(getgenv()._G.SelectWeapon)
+                                        EquipWeapon(_GENV._G.SelectWeapon)
                                         SafeMove(enemyRoot.CFrame * CFrame.new(1, 1, 2))
                                         enemyRoot.Size = Vector3.new(60, 60, 60)
                                         enemyRoot.CanCollide = false
                                         enemyHead.CanCollide = false
                                         enemyHuman.WalkSpeed = 0
                                         FireAttackRemote(targetPlayer)
-                                    until not getgenv()._G.AutoKillV4 or enemyHuman.Health <= 0
+                                    until not _GENV._G.AutoKillV4 or enemyHuman.Health <= 0
                                         or not targetPlayer.Parent or not targetPlayer:FindFirstChild("HumanoidRootPart")
                                 end
                             end
@@ -1052,7 +1064,7 @@ end)
 -- Luồng Auto Quest Trial các Tộc
 task.spawn(function()
     while task.wait(0.5) do
-        if getgenv()._G.AutoQuestRace then
+        if _GENV._G.AutoQuestRace then
             pcall(function()
                 local currentRace = LocalPlayer.Data.Race.Value
                 if currentRace == "Human" or currentRace == "Ghoul" then
@@ -1065,7 +1077,7 @@ task.spawn(function()
                                     task.wait(0.2)
                                     enemy.Humanoid.Health = 0
                                     enemy.HumanoidRootPart.CanCollide = false
-                                until not getgenv()._G.AutoQuestRace or not enemy.Parent or enemy.Humanoid.Health <= 0
+                                until not _GENV._G.AutoQuestRace or not enemy.Parent or enemy.Humanoid.Health <= 0
                             end
                         end
                     end
@@ -1083,7 +1095,7 @@ task.spawn(function()
                     for _, part in pairs(game:GetService("Workspace"):GetDescendants()) do
                         if part.Name == "StartPoint" then
                             SafeMove(part.CFrame * CFrame.new(0, 3, 0))
-                            getgenv()._G.AutoQuestRace = false
+                            _GENV._G.AutoQuestRace = false
                         end
                     end
                 elseif currentRace == "Fishman" then
