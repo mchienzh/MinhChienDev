@@ -823,7 +823,7 @@ TabMain:CreateToggle("Auto Tween To Gear", getgenv()._G.TweenMGear, function(boo
     getgenv()._G.TweenMGear = bool
 end)
 
-TabMain:CreateToggle("Kill Aura (Mobs + Người)", getgenv()._G.KillAura, function(bool)
+TabMain:CreateToggle("Kill Aura", getgenv()._G.KillAura, function(bool)
     getgenv()._G.KillAura = bool
 end)
 
