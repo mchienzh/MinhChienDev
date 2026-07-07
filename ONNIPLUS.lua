@@ -1355,5 +1355,5 @@ end)
 -- XONG — Thông báo load
 -- =====================================================================
 task.delay(0.6, function()
-    Notify("✦ MINHCHIEN HUB v3 ✦", "UI mới đã tải thành công!", 4)
+    Notify("✦ MINHCHIEN HUB v3 ✦", "Đã tải thành công!", 4)
 end)
