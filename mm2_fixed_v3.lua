@@ -27,7 +27,7 @@ local features = {
 }
 
 local CONFIG = {
-    AutoPickRadius = 40,
+    AutoPickRadius = 400,
     ESP_UpdateInterval = 0.3,
     DesyncInterval = 0.05,
     MaxLockDistance = 50,
@@ -36,7 +36,7 @@ local CONFIG = {
     SilentTargetPart = "Head",
     ESP_AutoCheckInterval = 3,
     TeleportCooldown = 1.5,
-    MaxDetectionDist = 50,
+    MaxDetectionDist = 500,
 }
 
 -- ================================================================
