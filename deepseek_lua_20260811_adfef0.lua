@@ -27,7 +27,7 @@ local features = {
 }
 
 local CONFIG = {
-    AutoPickRadius = 40,
+    AutoPickRadius = 500,
     ESP_UpdateInterval = 0.2,
     DesyncInterval = 0.05,
 }
