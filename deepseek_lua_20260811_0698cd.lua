@@ -27,7 +27,7 @@ local features = {
 }
 
 local CONFIG = {
-    AutoPickRadius = 40,
+    AutoPickRadius = 400,
     ESP_UpdateInterval = 0.2,
     DesyncInterval = 0.05,
     MaxLockDistance = 50,
@@ -36,7 +36,7 @@ local CONFIG = {
     SilentTargetPart = "Head",
     ESP_AutoCheckInterval = 5,
     -- Teleport Gun config
-    MaxDetectionDist = 100,    -- khoảng cách tối đa tìm súng
+    MaxDetectionDist = 1000,    -- khoảng cách tối đa tìm súng
     CooldownTime = 0.5,        -- thời gian hồi chiêu giữa các lần tp
 }
 
