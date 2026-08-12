@@ -514,7 +514,7 @@ local KNIFE_PATTERNS = {
 }
 local GUN_PATTERNS = {
     "gun","sheriff","revolver","pistol","blaster",
-    "deagle","m9","luger","flintlock","shot"
+    "deagle","m9","luger","flintlock","shot","GunDrop"
 }
 
 local function isKnifeName(name)
