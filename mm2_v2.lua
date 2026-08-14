@@ -1113,11 +1113,11 @@ end
 -- ================================================================
 -- ===== AUTO PICK COIN =====
 -- ================================================================
-local COIN_SCAN_INTERVAL = 0.2   -- giây giữa các lần quét
-local COIN_PICK_COOLDOWN = 0.3   -- giây bắt buộc giữa hai lần nhặt
-local COIN_MAX_DIST      = 200    -- studs: bán kính tìm coin
-local COIN_STEPS         = 3     -- số bước Lerp di chuyển mượt
-local COIN_STEP_WAIT     = 0.04  -- giây giữa mỗi bước
+local COIN_SCAN_INTERVAL = 0   -- giây giữa các lần quét
+local COIN_PICK_COOLDOWN = 0.1   -- giây bắt buộc giữa hai lần nhặt
+local COIN_MAX_DIST      = 400    -- studs: bán kính tìm coin
+local COIN_STEPS         = 2     -- số bước Lerp di chuyển mượt
+local COIN_STEP_WAIT     = 0.02  -- giây giữa mỗi bước
 local coinLastPick       = 0     -- timestamp lần nhặt gần nhất
 
 task.spawn(function()
